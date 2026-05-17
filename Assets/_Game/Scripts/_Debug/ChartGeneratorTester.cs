@@ -37,8 +37,6 @@ public class ChartGeneratorTester : MonoBehaviour
 
         ChartSaveLoad.Save(generatedChart, saveFileName);
 
-        ChartSaveLoad.Save(generatedChart, saveFileName);
-
         if (!BeatmapParser.TryLoadChart(saveFileName, out ChartData loadedChart))
         {
             Debug.LogError("Load chart failed.");
@@ -57,7 +55,17 @@ public class ChartGeneratorTester : MonoBehaviour
         {
             visualizer.Draw(loadedChart);
         }
+        var spawnDataList = ChartRuntimeConverter.ConvertToSpawnData(loadedChart);
 
+        if (spawnDataList.Count > 0)
+        {
+            Debug.Log($"First Spawn Data: ID = {spawnDataList[0].noteId} | Time = {spawnDataList[0].hitTime:F2} | Lane = {spawnDataList[0].laneIndex} | Type = {spawnDataList[0].noteType}");
+        }
+        if (ChartSpawnDataProvider.TryGetSpawnData(saveFileName, out var providerSpawnData))
+        {
+            Debug.Log($"Provider OK. Spawn Data Count: {providerSpawnData.Count}");
+            ChartDebugPrinter.PrintSpawnData(providerSpawnData, 10);
+        }
         PrintFirstNotes(loadedChart, 10);
     }
 

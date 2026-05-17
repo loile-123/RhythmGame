@@ -30,9 +30,9 @@ public static class SimpleChartGenerator
             {
                 time = time,
                 lane = Random.Range(0, laneCount),
-                type = ChartNoteType.Tap,
+                type = NoteType.Tap,
                 duration = 0f,
-                flickDirection = ChartFlickDirection.Any,
+                flickDirection = FlickDirection.Any,
                 slidePath = null
             };
 
