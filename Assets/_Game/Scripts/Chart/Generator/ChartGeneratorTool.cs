@@ -43,18 +43,14 @@ public class ChartGeneratorTool : MonoBehaviour
 
         ChartSaveLoad.Save(chart, saveFileName);
 
-        Debug.Log(
-            $"Generated and saved chart: {chart.songName} | " +
-            $"Notes: {chart.notes.Count} | " +
-            $"BPM: {chart.bpm} | " +
-            $"Offset: {chart.offset}"
-        );
+        Debug.Log($"Generated and saved chart: {chart.songName} | Notes: {chart.notes.Count}");
 
         if (visualizer != null)
         {
             visualizer.Draw(chart);
         }
     }
+
     public void LoadAndPreview()
     {
         if (visualizer == null)
@@ -71,11 +67,27 @@ public class ChartGeneratorTool : MonoBehaviour
 
         visualizer.Draw(loadedChart);
 
-        Debug.Log(
-            $"Loaded preview chart: {loadedChart.songName} | " +
-            $"Notes: {loadedChart.notes.Count} | " +
-            $"BPM: {loadedChart.bpm} | " +
-            $"Offset: {loadedChart.offset}"
-        );
+        Debug.Log($"Loaded preview chart: {loadedChart.songName} | Notes: {loadedChart.notes.Count}");
+    }
+
+    public void SaveEditedChart()
+    {
+        if (visualizer == null)
+        {
+            Debug.LogError("Visualizer is missing.");
+            return;
+        }
+
+        ChartData chart = visualizer.GetCurrentChart();
+
+        if (chart == null)
+        {
+            Debug.LogWarning("No chart loaded to save.");
+            return;
+        }
+
+        ChartSaveLoad.Save(chart, saveFileName);
+
+        Debug.Log($"Saved edited chart: {chart.songName} | Notes: {chart.notes.Count}");
     }
 }

@@ -21,6 +21,10 @@ public class ChartGeneratorToolEditor : Editor
         {
             tool.LoadAndPreview();
         }
+        if (GUILayout.Button("Save Edited Chart"))
+        {
+            tool.SaveEditedChart();
+        }
     }
 }
 #endif
