@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class QuiMenu : MonoBehaviour
+public class QuitMenu : MonoBehaviour
 
 {
     public void Quit()
