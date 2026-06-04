@@ -17,13 +17,16 @@ public class RhythmTimeManager : MonoBehaviour
 	// SONG SETTINGS
 	// ==========================================================
 
-	[Header("Song Settings")]
+	[Header("Song")]
 
 	[SerializeField]
 	private float bpm = 120f;
 
 	[SerializeField]
 	private float userOffsetMs = 0f;
+
+	[SerializeField]
+	private double songStartDelay = 1.0;
 
 	// ==========================================================
 	// DEBUG
@@ -32,10 +35,13 @@ public class RhythmTimeManager : MonoBehaviour
 	[Header("Debug")]
 
 	[SerializeField]
-	private bool enableDebugLog = true;
+	private bool enableDebugLog = false;
+
+	[SerializeField]
+	private float debugInterval = 0.5f;
 
 	// ==========================================================
-	// DSP Timing
+	// DSP
 	// ==========================================================
 
 	private double dspSongStartTime;
@@ -44,8 +50,16 @@ public class RhythmTimeManager : MonoBehaviour
 
 	private bool wasPlaying;
 
+	private bool isPaused;
+
 	// ==========================================================
-	// Runtime Values
+	// DEBUG
+	// ==========================================================
+
+	private float debugTimer;
+
+	// ==========================================================
+	// PROPERTIES
 	// ==========================================================
 
 	public double SongPositionSeconds
@@ -61,14 +75,33 @@ public class RhythmTimeManager : MonoBehaviour
 		SongPositionSeconds /
 		SecondsPerBeat;
 
-	public double SongProgress =>
-		SongPositionSeconds /
-		AudioManager.Instance
-			.GetMusicSource()
-			.clip.length;
-
 	public bool IsSongFinished =>
 		SongProgress >= 1.0;
+
+	public double SongProgress
+	{
+		get
+		{
+			AudioSource source =
+				AudioManager.Instance?
+					.GetMusicSource();
+
+			if (
+				source == null ||
+				source.clip == null
+			)
+			{
+				return 0;
+			}
+
+			return Mathf.Clamp01(
+				(float)(
+					SongPositionSeconds /
+					source.clip.length
+				)
+			);
+		}
+	}
 
 	// ==========================================================
 	// UNITY
@@ -76,8 +109,53 @@ public class RhythmTimeManager : MonoBehaviour
 
 	private void Awake()
 	{
-		// Singleton
-		if (Instance != null && Instance != this)
+		InitializeSingleton();
+	}
+
+	private void Update()
+	{
+		if (
+			AudioManager.Instance == null
+		)
+		{
+			return;
+		}
+
+		AudioSource musicSource =
+			AudioManager.Instance
+				.GetMusicSource();
+
+		if (musicSource == null)
+		{
+			return;
+		}
+
+		HandlePauseInput();
+
+		HandlePauseResume();
+
+		if (!musicSource.isPlaying)
+		{
+			return;
+		}
+
+		UpdateSongPosition();
+
+		HandleDebug();
+
+		CheckSongFinished();
+	}
+
+	// ==========================================================
+	// SINGLETON
+	// ==========================================================
+
+	private void InitializeSingleton()
+	{
+		if (
+			Instance != null &&
+			Instance != this
+		)
 		{
 			Destroy(gameObject);
 
@@ -89,68 +167,50 @@ public class RhythmTimeManager : MonoBehaviour
 		DontDestroyOnLoad(gameObject);
 	}
 
-	private void Start()
+	// ==========================================================
+	// START SONG
+	// ==========================================================
+
+	public void StartSong()
 	{
-		// ==========================================================
-		// AUTO START SONG
-		// ==========================================================
-
-		StartSong();
-	}
-
-	private void Update()
-	{
-		// ==========================================================
-		// ESC = Pause / Resume
-		// ==========================================================
-
 		if (
-			Keyboard.current.escapeKey
-				.wasPressedThisFrame
+			AudioManager.Instance == null
 		)
 		{
-			AudioSource source =
-				AudioManager.Instance
-					.GetMusicSource();
+			Debug.LogError(
+				"[RhythmTimeManager] Missing AudioManager"
+			);
 
-			if (source.isPlaying)
-			{
-				PauseGame();
-
-				if (enableDebugLog)
-				{
-					Debug.Log("PAUSE");
-				}
-			}
-			else
-			{
-				ResumeGame();
-
-				if (enableDebugLog)
-				{
-					Debug.Log("RESUME");
-				}
-			}
+			return;
 		}
 
-		// ==========================================================
-		// HANDLE DSP RESYNC
-		// ==========================================================
+		dspSongStartTime =
+			AudioSettings.dspTime
+			+ songStartDelay;
 
-		HandlePauseResume();
+		AudioManager.Instance
+			.PlayMusicScheduled(
+				dspSongStartTime
+			);
 
-		AudioSource musicSource =
-			AudioManager.Instance
-				.GetMusicSource();
+		wasPlaying = true;
 
-		// Stop update if paused
-		if (!musicSource.isPlaying)
-			return;
+		isPaused = false;
 
-		// ==========================================================
-		// DSP TIME
-		// ==========================================================
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[RhythmTimeManager] Song Started"
+			);
+		}
+	}
 
+	// ==========================================================
+	// SONG POSITION
+	// ==========================================================
+
+	private void UpdateSongPosition()
+	{
 		SongPositionSeconds =
 			(
 				AudioSettings.dspTime
@@ -160,95 +220,59 @@ public class RhythmTimeManager : MonoBehaviour
 				userOffsetMs / 1000.0
 			);
 
-		// ==========================================================
-		// DEBUG
-		// ==========================================================
-
-		if (enableDebugLog)
+		if (SongPositionSeconds < 0)
 		{
-			Debug.Log(
-				"Time: "
-				+ SongPositionSeconds
-					.ToString("F2")
-				+ " | Beat: "
-				+ SongPositionInBeats
-					.ToString("F2")
-				+ " | Progress: "
-				+ (
-					SongProgress * 100f
-				).ToString("F0")
-				+ "%"
-			);
+			SongPositionSeconds = 0;
+		}
+	}
+
+	// ==========================================================
+	// PAUSE INPUT
+	// ==========================================================
+
+	private void HandlePauseInput()
+	{
+		if (
+			Keyboard.current == null
+		)
+		{
+			return;
 		}
 
-		// ==========================================================
-		// SONG FINISHED
-		// ==========================================================
-
-		if (IsSongFinished)
+		if (
+			Keyboard.current
+				.escapeKey
+				.wasPressedThisFrame
+		)
 		{
-			if (enableDebugLog)
+			if (isPaused)
 			{
-				Debug.Log(
-					"SONG FINISHED"
-				);
+				ResumeGame();
+			}
+			else
+			{
+				PauseGame();
 			}
 		}
 	}
 
 	// ==========================================================
-	// START SONG
-	// ==========================================================
-
-	public void StartSong()
-	{
-		dspSongStartTime =
-			AudioSettings.dspTime;
-
-		AudioManager.Instance.PlayMusic();
-
-		wasPlaying = true;
-
-		if (enableDebugLog)
-		{
-			Debug.Log("SONG START");
-		}
-	}
-
-	// ==========================================================
-	// SET BPM
-	// ==========================================================
-
-	public void SetBPM(float newBpm)
-	{
-		bpm = newBpm;
-
-		if (enableDebugLog)
-		{
-			Debug.Log(
-				"NEW BPM: " + bpm
-			);
-		}
-	}
-
-	// ==========================================================
-	// HANDLE PAUSE / RESUME DSP SYNC
+	// DSP RESYNC
 	// ==========================================================
 
 	private void HandlePauseResume()
 	{
-		AudioSource music =
+		AudioSource musicSource =
 			AudioManager.Instance
 				.GetMusicSource();
 
 		bool isPlayingNow =
-			music.isPlaying;
+			musicSource.isPlaying;
 
-		// ==========================================================
-		// PAUSE DETECTED
-		// ==========================================================
-
-		if (wasPlaying && !isPlayingNow)
+		if (
+			wasPlaying &&
+			!isPlayingNow
+		)
 		{
 			pauseDSPTime =
 				AudioSettings.dspTime;
@@ -256,29 +280,27 @@ public class RhythmTimeManager : MonoBehaviour
 			if (enableDebugLog)
 			{
 				Debug.Log(
-					"DSP PAUSE DETECTED"
+					"[RhythmTimeManager] Pause DSP"
 				);
 			}
 		}
 
-		// ==========================================================
-		// RESUME DETECTED
-		// ==========================================================
-
-		if (!wasPlaying && isPlayingNow)
+		if (
+			!wasPlaying &&
+			isPlayingNow
+		)
 		{
 			double pausedDuration =
 				AudioSettings.dspTime
 				- pauseDSPTime;
 
-			// Prevent desync
 			dspSongStartTime +=
 				pausedDuration;
 
 			if (enableDebugLog)
 			{
 				Debug.Log(
-					"DSP RESYNC COMPLETE"
+					"[RhythmTimeManager] DSP Resync"
 				);
 			}
 		}
@@ -295,7 +317,14 @@ public class RhythmTimeManager : MonoBehaviour
 		AudioManager.Instance
 			.PauseMusic();
 
-		Time.timeScale = 0f;
+		isPaused = true;
+
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[RhythmTimeManager] Pause"
+			);
+		}
 	}
 
 	// ==========================================================
@@ -307,23 +336,108 @@ public class RhythmTimeManager : MonoBehaviour
 		AudioManager.Instance
 			.ResumeMusic();
 
-		Time.timeScale = 1f;
+		isPaused = false;
+
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[RhythmTimeManager] Resume"
+			);
+		}
+	}
+
+	// ==========================================================
+	// BPM
+	// ==========================================================
+
+	public void SetBPM(
+		float newBpm
+	)
+	{
+		if (newBpm <= 0)
+		{
+			return;
+		}
+
+		bpm = newBpm;
 	}
 
 	// ==========================================================
 	// OFFSET
 	// ==========================================================
 
-	public void SetOffset(float offsetMs)
+	public void SetOffset(
+		float offsetMs
+	)
 	{
 		userOffsetMs = offsetMs;
 
-		if (enableDebugLog)
+		PlayerPrefs.SetFloat(
+			"USER_OFFSET",
+			userOffsetMs
+		);
+
+		PlayerPrefs.Save();
+	}
+
+	public void LoadOffset()
+	{
+		userOffsetMs =
+			PlayerPrefs.GetFloat(
+				"USER_OFFSET",
+				0f
+			);
+	}
+
+	// ==========================================================
+	// DEBUG
+	// ==========================================================
+
+	private void HandleDebug()
+	{
+		if (!enableDebugLog)
+		{
+			return;
+		}
+
+		debugTimer +=
+			Time.unscaledDeltaTime;
+
+		if (debugTimer < debugInterval)
+		{
+			return;
+		}
+
+		debugTimer = 0f;
+
+		Debug.Log(
+			"Song Time: "
+			+ SongPositionSeconds
+				.ToString("F3")
+			+ " | Beat: "
+			+ SongPositionInBeats
+				.ToString("F2")
+			+ " | Progress: "
+			+ (
+				SongProgress * 100f
+			).ToString("F0")
+			+ "%"
+		);
+	}
+
+	// ==========================================================
+	// SONG FINISH
+	// ==========================================================
+
+	private void CheckSongFinished()
+	{
+		if (
+			IsSongFinished &&
+			enableDebugLog
+		)
 		{
 			Debug.Log(
-				"OFFSET: "
-				+ userOffsetMs
-				+ " ms"
+				"[RhythmTimeManager] Song Finished"
 			);
 		}
 	}

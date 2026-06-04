@@ -144,7 +144,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 561779485}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -163,7 +163,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 4895cceaddc285d4a86c86a11292c37d, type: 3}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -257,7 +257,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 739606965}
-  - component: {fileID: 739606967}
+  - component: {fileID: 739606968}
   - component: {fileID: 739606966}
   m_Layer: 0
   m_Name: RhythmTimeManager
@@ -274,7 +274,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 739606964}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -296,7 +296,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bpm: 120
   userOffsetMs: 0
---- !u!114 &739606967
+  songStartDelay: 1
+  enableDebugLog: 0
+  debugInterval: 0.5
+--- !u!114 &739606968
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -305,14 +308,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 739606964}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 157f9c3bccd98e049af713cb611e9b17, type: 3}
+  m_Script: {fileID: 11500000, guid: 238d13752b81f1e4092b3b1cb61ba167, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   musicSource: {fileID: 561779487}
+  perfectClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
+  greatClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
+  goodClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
+  missClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
+  comboClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
+  menuClickClip: {fileID: 8300000, guid: f806ca08bea9d424b9dec4d0a7c60f1a, type: 3}
   sfxPrefab: {fileID: 561779487}
-  poolSize: 20
+  poolSize: 15
+  masterVolume: 1
   musicVolume: 1
   sfxVolume: 1
+  volumeStep: 0.1
+  userOffsetMs: 0
 --- !u!1 &890261354
 GameObject:
   m_ObjectHideFlags: 0

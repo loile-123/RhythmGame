@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,73 +14,98 @@ public class AudioManager : MonoBehaviour
 	}
 
 	// ==========================================================
-	// SERIALIZABLE CLASSES
+	// ENUM
 	// ==========================================================
 
-	[System.Serializable]
-	private class MusicSettings
+	public enum SFXType
 	{
-		[Header("Music Settings")]
-
-		public AudioSource musicSource;
-	}
-
-	[System.Serializable]
-	private class SFXSettings
-	{
-		[Header("SFX Settings")]
-
-		public AudioSource sfxPrefab;
-
-		public int poolSize = 10;
-	}
-
-	[System.Serializable]
-	private class VolumeSettings
-	{
-		[Header("Volume Settings")]
-
-		[Range(0f, 1f)]
-		public float musicVolume = 1f;
-
-		[Range(0f, 1f)]
-		public float sfxVolume = 1f;
-	}
-
-	[System.Serializable]
-	private class DebugSettings
-	{
-		[Header("Debug Settings")]
-
-		public bool enableDebugLog = true;
+		Perfect,
+		Great,
+		Good,
+		Miss,
+		MenuClick,
+		Combo
 	}
 
 	// ==========================================================
-	// INSPECTOR
+	// MUSIC
 	// ==========================================================
 
-	[SerializeField]
-	private MusicSettings musicSettings =
-		new MusicSettings();
+	[Header("Music")]
 
 	[SerializeField]
-	private SFXSettings sfxSettings =
-		new SFXSettings();
-
-	[SerializeField]
-	private VolumeSettings volumeSettings =
-		new VolumeSettings();
-
-	[SerializeField]
-	private DebugSettings debugSettings =
-		new DebugSettings();
+	private AudioSource musicSource;
 
 	// ==========================================================
-	// Runtime
+	// SFX
 	// ==========================================================
 
-	private Queue<AudioSource> sfxPool =
-		new Queue<AudioSource>();
+	[Header("SFX Pool")]
+
+	[SerializeField]
+	private AudioSource sfxPrefab;
+
+	[SerializeField]
+	private int initialPoolSize = 15;
+
+	// ==========================================================
+	// GAMEPLAY SFX
+	// ==========================================================
+
+	[Header("Gameplay SFX")]
+
+	[SerializeField]
+	private AudioClip perfectClip;
+
+	[SerializeField]
+	private AudioClip greatClip;
+
+	[SerializeField]
+	private AudioClip goodClip;
+
+	[SerializeField]
+	private AudioClip missClip;
+
+	[SerializeField]
+	private AudioClip comboClip;
+
+	[SerializeField]
+	private AudioClip menuClickClip;
+
+	// ==========================================================
+	// VOLUME
+	// ==========================================================
+
+	[Header("Volume")]
+
+	[Range(0f, 1f)]
+	[SerializeField]
+	private float masterVolume = 1f;
+
+	[Range(0f, 1f)]
+	[SerializeField]
+	private float musicVolume = 1f;
+
+	[Range(0f, 1f)]
+	[SerializeField]
+	private float sfxVolume = 1f;
+
+	// ==========================================================
+	// DEBUG
+	// ==========================================================
+
+	[Header("Debug")]
+
+	[SerializeField]
+	private bool enableDebugLog = false;
+
+	// ==========================================================
+	// POOL
+	// ==========================================================
+
+	private readonly List<AudioSource>
+		sfxPool =
+			new List<AudioSource>();
 
 	// ==========================================================
 	// UNITY
@@ -89,7 +113,23 @@ public class AudioManager : MonoBehaviour
 
 	private void Awake()
 	{
-		if (Instance != null && Instance != this)
+		InitializeSingleton();
+
+		CreateInitialPool();
+
+		LoadVolumeSettings();
+	}
+
+	// ==========================================================
+	// SINGLETON
+	// ==========================================================
+
+	private void InitializeSingleton()
+	{
+		if (
+			Instance != null &&
+			Instance != this
+		)
 		{
 			Destroy(gameObject);
 
@@ -99,138 +139,220 @@ public class AudioManager : MonoBehaviour
 		Instance = this;
 
 		DontDestroyOnLoad(gameObject);
-
-		CreatePool();
 	}
 
 	// ==========================================================
-	// CREATE SFX POOL
+	// POOL
 	// ==========================================================
 
-	private void CreatePool()
+	private void CreateInitialPool()
 	{
 		for (
 			int i = 0;
-			i < sfxSettings.poolSize;
+			i < initialPoolSize;
 			i++
 		)
 		{
-			AudioSource source =
-				Instantiate(
-					sfxSettings.sfxPrefab,
-					transform
-				);
-
-			source.gameObject
-				.SetActive(false);
-
-			sfxPool.Enqueue(source);
+			CreateNewSource();
 		}
 
-		if (
-			debugSettings
-				.enableDebugLog
-		)
+		if (enableDebugLog)
 		{
 			Debug.Log(
-				"SFX POOL CREATED"
+				"[AudioManager] Pool Created"
 			);
 		}
 	}
 
+	private AudioSource CreateNewSource()
+	{
+		AudioSource source =
+			Instantiate(
+				sfxPrefab,
+				transform
+			);
+
+		source.playOnAwake = false;
+
+		sfxPool.Add(source);
+
+		return source;
+	}
+
+	private AudioSource GetAvailableSource()
+	{
+		for (
+			int i = 0;
+			i < sfxPool.Count;
+			i++
+		)
+		{
+			if (!sfxPool[i].isPlaying)
+			{
+				return sfxPool[i];
+			}
+		}
+
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[AudioManager] Pool Expanded"
+			);
+		}
+
+		return CreateNewSource();
+	}
+
 	// ==========================================================
-	// PLAY MUSIC
+	// MUSIC
 	// ==========================================================
 
-	public void PlayMusic()
+	public void LoadMusic(
+		AudioClip clip
+	)
 	{
 		if (
-			musicSettings.musicSource
-				.clip == null
+			musicSource == null ||
+			clip == null
 		)
 		{
 			Debug.LogError(
-				"No Music Clip"
+				"[AudioManager] Invalid Music"
 			);
 
 			return;
 		}
 
-		musicSettings.musicSource
-			.volume =
-			volumeSettings.musicVolume;
+		musicSource.clip = clip;
+	}
 
-		musicSettings.musicSource
-			.Play();
-
+	public void PlayMusic()
+	{
 		if (
-			debugSettings
-				.enableDebugLog
+			musicSource == null ||
+			musicSource.clip == null
 		)
 		{
+			Debug.LogError(
+				"[AudioManager] Missing Music"
+			);
+
+			return;
+		}
+
+		musicSource.volume =
+			musicVolume *
+			masterVolume;
+
+		musicSource.Play();
+
+		if (enableDebugLog)
+		{
 			Debug.Log(
-				"MUSIC PLAY"
+				"[AudioManager] Music Play"
 			);
 		}
 	}
 
 	// ==========================================================
-	// STOP MUSIC
+	// DSP PLAY
 	// ==========================================================
+
+	public void PlayMusicScheduled(
+		double dspStartTime
+	)
+	{
+		if (
+			musicSource == null ||
+			musicSource.clip == null
+		)
+		{
+			Debug.LogError(
+				"[AudioManager] Missing Music"
+			);
+
+			return;
+		}
+
+		musicSource.volume =
+			musicVolume *
+			masterVolume;
+
+		musicSource.PlayScheduled(
+			dspStartTime
+		);
+
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[AudioManager] DSP Scheduled"
+			);
+		}
+	}
 
 	public void StopMusic()
 	{
-		musicSettings.musicSource
-			.Stop();
-
-		if (
-			debugSettings
-				.enableDebugLog
-		)
+		if (musicSource == null)
 		{
-			Debug.Log(
-				"MUSIC STOP"
-			);
+			return;
 		}
-	}
 
-	// ==========================================================
-	// PAUSE MUSIC
-	// ==========================================================
+		musicSource.Stop();
+	}
 
 	public void PauseMusic()
 	{
-		musicSettings.musicSource
-			.Pause();
-
-		if (
-			debugSettings
-				.enableDebugLog
-		)
+		if (musicSource == null)
 		{
-			Debug.Log(
-				"MUSIC PAUSE"
-			);
+			return;
 		}
-	}
 
-	// ==========================================================
-	// RESUME MUSIC
-	// ==========================================================
+		musicSource.Pause();
+	}
 
 	public void ResumeMusic()
 	{
-		musicSettings.musicSource
-			.UnPause();
-
-		if (
-			debugSettings
-				.enableDebugLog
-		)
+		if (musicSource == null)
 		{
-			Debug.Log(
-				"MUSIC RESUME"
-			);
+			return;
+		}
+
+		musicSource.UnPause();
+	}
+
+	// ==========================================================
+	// GAMEPLAY SFX
+	// ==========================================================
+
+	public void PlayGameplaySFX(
+		SFXType type
+	)
+	{
+		switch (type)
+		{
+			case SFXType.Perfect:
+				PlaySFX(perfectClip);
+				break;
+
+			case SFXType.Great:
+				PlaySFX(greatClip);
+				break;
+
+			case SFXType.Good:
+				PlaySFX(goodClip);
+				break;
+
+			case SFXType.Miss:
+				PlaySFX(missClip);
+				break;
+
+			case SFXType.Combo:
+				PlaySFX(comboClip);
+				break;
+
+			case SFXType.MenuClick:
+				PlaySFX(menuClickClip);
+				break;
 		}
 	}
 
@@ -242,103 +364,122 @@ public class AudioManager : MonoBehaviour
 		AudioClip clip
 	)
 	{
+		if (clip == null)
+		{
+			return;
+		}
+
 		AudioSource source =
-			GetPooledSource();
+			GetAvailableSource();
 
 		source.clip = clip;
 
 		source.volume =
-			volumeSettings.sfxVolume;
-
-		source.gameObject
-			.SetActive(true);
+			sfxVolume *
+			masterVolume;
 
 		source.Play();
-
-		StartCoroutine(
-			ReturnToPool(
-				source,
-				clip.length
-			)
-		);
-
-		if (
-			debugSettings
-				.enableDebugLog
-		)
-		{
-			Debug.Log(
-				"SFX PLAY: "
-				+ clip.name
-			);
-		}
-	}
-
-	// ==========================================================
-	// GET POOLED SOURCE
-	// ==========================================================
-
-	private AudioSource GetPooledSource()
-	{
-		AudioSource source =
-			sfxPool.Dequeue();
-
-		sfxPool.Enqueue(source);
-
-		return source;
-	}
-
-	// ==========================================================
-	// RETURN TO POOL
-	// ==========================================================
-
-	private IEnumerator ReturnToPool(
-		AudioSource source,
-		float delay
-	)
-	{
-		yield return
-			new WaitForSecondsRealtime(
-				delay
-			);
-
-		source.Stop();
-
-		source.gameObject
-			.SetActive(false);
-	}
-
-	// ==========================================================
-	// GET MUSIC SOURCE
-	// ==========================================================
-
-	public AudioSource GetMusicSource()
-	{
-		return
-			musicSettings.musicSource;
 	}
 
 	// ==========================================================
 	// VOLUME
 	// ==========================================================
 
+	public void SetMasterVolume(
+		float value
+	)
+	{
+		masterVolume =
+			Mathf.Clamp01(value);
+
+		ApplyVolume();
+		SaveVolumeSettings();
+	}
+
 	public void SetMusicVolume(
 		float value
 	)
 	{
-		volumeSettings.musicVolume =
-			value;
+		musicVolume =
+			Mathf.Clamp01(value);
 
-		musicSettings.musicSource
-			.volume =
-			volumeSettings.musicVolume;
+		ApplyVolume();
+		SaveVolumeSettings();
 	}
 
 	public void SetSFXVolume(
 		float value
 	)
 	{
-		volumeSettings.sfxVolume =
-			value;
+		sfxVolume =
+			Mathf.Clamp01(value);
+
+		SaveVolumeSettings();
+	}
+
+	private void ApplyVolume()
+	{
+		if (musicSource != null)
+		{
+			musicSource.volume =
+				musicVolume *
+				masterVolume;
+		}
+	}
+
+	// ==========================================================
+	// SAVE / LOAD
+	// ==========================================================
+
+	private void SaveVolumeSettings()
+	{
+		PlayerPrefs.SetFloat(
+			"MASTER_VOLUME",
+			masterVolume
+		);
+
+		PlayerPrefs.SetFloat(
+			"MUSIC_VOLUME",
+			musicVolume
+		);
+
+		PlayerPrefs.SetFloat(
+			"SFX_VOLUME",
+			sfxVolume
+		);
+
+		PlayerPrefs.Save();
+	}
+
+	private void LoadVolumeSettings()
+	{
+		masterVolume =
+			PlayerPrefs.GetFloat(
+				"MASTER_VOLUME",
+				1f
+			);
+
+		musicVolume =
+			PlayerPrefs.GetFloat(
+				"MUSIC_VOLUME",
+				1f
+			);
+
+		sfxVolume =
+			PlayerPrefs.GetFloat(
+				"SFX_VOLUME",
+				1f
+			);
+
+		ApplyVolume();
+	}
+
+	// ==========================================================
+	// GETTERS
+	// ==========================================================
+
+	public AudioSource GetMusicSource()
+	{
+		return musicSource;
 	}
 }
