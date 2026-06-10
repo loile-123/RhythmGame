@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -110,6 +111,13 @@ public class RhythmTimeManager : MonoBehaviour
 	private void Awake()
 	{
 		InitializeSingleton();
+
+		if (Instance != this)
+		{
+			return;
+		}
+
+		LoadOffset();
 	}
 
 	private void Update()
@@ -145,7 +153,6 @@ public class RhythmTimeManager : MonoBehaviour
 
 		CheckSongFinished();
 	}
-
 	// ==========================================================
 	// SINGLETON
 	// ==========================================================
@@ -345,7 +352,6 @@ public class RhythmTimeManager : MonoBehaviour
 			);
 		}
 	}
-
 	// ==========================================================
 	// BPM
 	// ==========================================================
@@ -360,6 +366,11 @@ public class RhythmTimeManager : MonoBehaviour
 		}
 
 		bpm = newBpm;
+	}
+
+	public float GetBPM()
+	{
+		return bpm;
 	}
 
 	// ==========================================================
@@ -378,6 +389,20 @@ public class RhythmTimeManager : MonoBehaviour
 		);
 
 		PlayerPrefs.Save();
+
+		if (enableDebugLog)
+		{
+			Debug.Log(
+				"[RhythmTimeManager] Offset = "
+				+ userOffsetMs
+				+ " ms"
+			);
+		}
+	}
+
+	public float GetOffset()
+	{
+		return userOffsetMs;
 	}
 
 	public void LoadOffset()
@@ -422,6 +447,9 @@ public class RhythmTimeManager : MonoBehaviour
 				SongProgress * 100f
 			).ToString("F0")
 			+ "%"
+			+ " | Offset: "
+			+ userOffsetMs
+			+ " ms"
 		);
 	}
 
@@ -440,5 +468,22 @@ public class RhythmTimeManager : MonoBehaviour
 				"[RhythmTimeManager] Song Finished"
 			);
 		}
+	}
+
+	// ==========================================================
+	// RESET
+	// ==========================================================
+
+	public void ResetSongTime()
+	{
+		SongPositionSeconds = 0;
+
+		dspSongStartTime = 0;
+
+		pauseDSPTime = 0;
+
+		isPaused = false;
+
+		wasPlaying = false;
 	}
 }

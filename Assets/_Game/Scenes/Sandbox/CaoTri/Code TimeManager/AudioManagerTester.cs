@@ -117,7 +117,6 @@ public class AudioTaskTester : MonoBehaviour
 
 		HandleOffsetTest();
 	}
-
 	// ==================================================
 	// POOL
 	// ==================================================
@@ -344,7 +343,6 @@ public class AudioTaskTester : MonoBehaviour
 			}
 		}
 	}
-
 	// ==================================================
 	// VOLUME TEST
 	// ==================================================
@@ -364,6 +362,11 @@ public class AudioTaskTester : MonoBehaviour
 				);
 
 			ApplyVolume();
+
+			Debug.Log(
+				"Music Volume = "
+				+ musicVolume
+			);
 		}
 
 		if (
@@ -379,6 +382,11 @@ public class AudioTaskTester : MonoBehaviour
 				);
 
 			ApplyVolume();
+
+			Debug.Log(
+				"Music Volume = "
+				+ musicVolume
+			);
 		}
 
 		if (
@@ -392,6 +400,11 @@ public class AudioTaskTester : MonoBehaviour
 				Mathf.Clamp01(
 					sfxVolume
 				);
+
+			Debug.Log(
+				"SFX Volume = "
+				+ sfxVolume
+			);
 		}
 
 		if (
@@ -405,6 +418,11 @@ public class AudioTaskTester : MonoBehaviour
 				Mathf.Clamp01(
 					sfxVolume
 				);
+
+			Debug.Log(
+				"SFX Volume = "
+				+ sfxVolume
+			);
 		}
 
 		if (
@@ -420,6 +438,11 @@ public class AudioTaskTester : MonoBehaviour
 				);
 
 			ApplyVolume();
+
+			Debug.Log(
+				"Master Volume = "
+				+ masterVolume
+			);
 		}
 
 		if (
@@ -435,6 +458,11 @@ public class AudioTaskTester : MonoBehaviour
 				);
 
 			ApplyVolume();
+
+			Debug.Log(
+				"Master Volume = "
+				+ masterVolume
+			);
 		}
 	}
 
@@ -467,10 +495,11 @@ public class AudioTaskTester : MonoBehaviour
 					50f
 				);
 
-			offsetSamples
-				.Add(sample);
+			offsetSamples.Add(
+				sample
+			);
 
-			float total = 0;
+			float total = 0f;
 
 			for (
 				int i = 0;
@@ -487,7 +516,7 @@ public class AudioTaskTester : MonoBehaviour
 				offsetSamples.Count;
 
 			Debug.Log(
-				"Offset = "
+				"Calculated Offset = "
 				+ userOffsetMs
 				+ " ms"
 			);

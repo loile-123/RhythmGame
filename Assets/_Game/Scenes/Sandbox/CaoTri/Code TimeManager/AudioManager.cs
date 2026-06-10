@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.InputSystem;
 public class AudioManager : MonoBehaviour
 {
 	// ==========================================================
@@ -115,9 +115,21 @@ public class AudioManager : MonoBehaviour
 	{
 		InitializeSingleton();
 
+		if (Instance != this)
+		{
+			return;
+		}
+
 		CreateInitialPool();
 
 		LoadVolumeSettings();
+
+		if (musicSource == null)
+		{
+			Debug.LogError(
+				"[AudioManager] MusicSource Missing"
+			);
+		}
 	}
 
 	// ==========================================================
@@ -253,7 +265,6 @@ public class AudioManager : MonoBehaviour
 			);
 		}
 	}
-
 	// ==========================================================
 	// DSP PLAY
 	// ==========================================================
@@ -393,6 +404,7 @@ public class AudioManager : MonoBehaviour
 			Mathf.Clamp01(value);
 
 		ApplyVolume();
+
 		SaveVolumeSettings();
 	}
 
@@ -404,6 +416,7 @@ public class AudioManager : MonoBehaviour
 			Mathf.Clamp01(value);
 
 		ApplyVolume();
+
 		SaveVolumeSettings();
 	}
 
@@ -416,7 +429,6 @@ public class AudioManager : MonoBehaviour
 
 		SaveVolumeSettings();
 	}
-
 	private void ApplyVolume()
 	{
 		if (musicSource != null)
@@ -475,11 +487,51 @@ public class AudioManager : MonoBehaviour
 	}
 
 	// ==========================================================
+	// MUTE
+	// ==========================================================
+
+	public void ToggleMusic(
+		bool enable
+	)
+	{
+		if (musicSource == null)
+		{
+			return;
+		}
+
+		musicSource.mute =
+			!enable;
+	}
+
+	public void ToggleSFX(
+		bool enable
+	)
+	{
+		AudioListener.pause =
+			!enable;
+	}
+
+	// ==========================================================
 	// GETTERS
 	// ==========================================================
 
 	public AudioSource GetMusicSource()
 	{
 		return musicSource;
+	}
+
+	public float GetMasterVolume()
+	{
+		return masterVolume;
+	}
+
+	public float GetMusicVolume()
+	{
+		return musicVolume;
+	}
+
+	public float GetSFXVolume()
+	{
+		return sfxVolume;
 	}
 }
